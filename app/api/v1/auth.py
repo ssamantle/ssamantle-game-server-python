@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db
-from app.db.models import Game, Participant
+from app.repository.database import get_db
+from app.repository.models import Game, Participant
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

@@ -1,17 +1,12 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from pathlib import Path
-from app.vectors import VectorDB
-from app.config import get_settings
-
-# 설정 로드
-settings = get_settings()
+from app.api.helpers import get_vector_db
 
 # 벡터 DB 초기화 (파일이 있으면)
 vector_db = None
 
 try:
-    vector_db = VectorDB(Path(settings.vector_db_path))
+    vector_db = get_vector_db()
 except FileNotFoundError:
     print("Warning: Vector database not found. Similarity features will not be available.")
     exit(1)

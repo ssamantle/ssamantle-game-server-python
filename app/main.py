@@ -4,18 +4,18 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.config import get_settings
-from app.db.database import create_tables
+from app.core.config import get_settings
 from app.api.routes import health, similarity
 from app.api.routes import users  # , games
 from app.api.v1 import games as games_v1
 from app.api.v1 import auth as auth_v1
-from app.utils.logging import (
+from app.core.logger import (
     reset_request_session_id,
     resolve_session_id_from_request,
     set_request_session_id,
     setup_logging,
 )
+from app.repository.database import init_db
 
 settings = get_settings()
 setup_logging(settings)
@@ -23,7 +23,7 @@ setup_logging(settings)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    create_tables()
+    init_db()
     yield
 
 
@@ -45,6 +45,7 @@ async def bind_request_logging_context(request: Request, call_next):
     finally:
         reset_request_session_id(token)
     return response
+
 
 # 세션 미들웨어 (쿠키 이름: SESSION)
 app.add_middleware(
@@ -72,6 +73,7 @@ app.include_router(users.router)
 app.include_router(games_v1.router)
 app.include_router(auth_v1.router)
 
+
 @app.get("/")
 async def root():
     return {
@@ -82,4 +84,5 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

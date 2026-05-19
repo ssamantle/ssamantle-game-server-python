@@ -1,9 +1,11 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
-from app.db.database import get_db
-from app.db.enums import GameStatus
-from app.db.models import Game, Participant
+from app.repository.database import get_db
+from app.repository.models import Game, Participant
 from app.schemas.user import NicknameCheckResponse
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -15,12 +17,13 @@ def check_nickname(
     db: Session = Depends(get_db),
 ):
     """닉네임 중복 확인 — 진행 중인 게임(PREGAME/INGAME) 기준"""
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     exists = (
         db.query(Participant)
         .join(Game)
         .filter(
             Participant.nickname == nickname,
-            Game.status.in_([GameStatus.PREGAME, GameStatus.INGAME]),
+            or_(Game.ended_at.is_(None), Game.ended_at > now),
         )
         .first()
     )

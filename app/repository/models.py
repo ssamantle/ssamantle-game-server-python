@@ -1,8 +1,9 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
-from app.db.database import Base
-from app.db.enums import GameStatus
+
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
+
+from app.repository.database import Base
 
 
 class Game(Base):
@@ -12,10 +13,11 @@ class Game(Base):
     hostname = Column(String, nullable=False)
     host_session_id = Column(String, nullable=False)
     target_word = Column(String, nullable=False)
-    status = Column(String, default=GameStatus.PREGAME)
     started_at = Column(DateTime, nullable=True)
     ended_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    created_at = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+    )
 
     participants = relationship("Participant", back_populates="game")
 
@@ -30,10 +32,14 @@ class Participant(Base):
     best_similarity = Column(Float, default=0.0)
     closest_word = Column(String, nullable=True)
     is_correct = Column(Boolean, default=False)
-    joined_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    joined_at = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+    )
 
     game = relationship("Game", back_populates="participants")
-    guesses = relationship("GuessHistory", back_populates="participant", cascade="all, delete-orphan")
+    guesses = relationship(
+        "GuessHistory", back_populates="participant", cascade="all, delete-orphan"
+    )
 
 
 class GuessHistory(Base):
@@ -46,6 +52,8 @@ class GuessHistory(Base):
     # 정답 단어 기준 유사도 순위 (1~1000위, 1001위 = 순위권 밖)
     word_rank = Column(Integer, default=1001)
     is_answer = Column(Boolean, default=False)
-    submitted_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    submitted_at = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+    )
 
     participant = relationship("Participant", back_populates="guesses")
