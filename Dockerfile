@@ -44,11 +44,11 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY . .
-
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /app/data /app/data
+
+COPY app app
 
 # 보안을 위해 비루트 사용자 생성 및 전환
 RUN useradd -m appuser && chown -R appuser /app
