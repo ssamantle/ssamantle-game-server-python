@@ -48,23 +48,17 @@ def get_host_session(request: Request, game_id: int) -> dict:
     return session
 
 
-def sync_game_status(game: Game, db: Session) -> str:
-    if game.status == GameStatus.POSTGAME:
+def get_game_status(
+    started_at: datetime | None,
+    ended_at: datetime | None,
+    now: datetime | None = None,
+) -> GameStatus:
+    current = now or datetime.now(timezone.utc).replace(tzinfo=None)
+    if ended_at and current >= ended_at:
         return GameStatus.POSTGAME
-
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
-    new_status = game.status
-
-    if game.ended_at and now >= game.ended_at:
-        new_status = GameStatus.POSTGAME
-    elif game.started_at and now >= game.started_at:
-        new_status = GameStatus.INGAME
-
-    if new_status != game.status:
-        game.status = new_status
-        db.commit()
-
-    return new_status
+    if started_at and current >= started_at:
+        return GameStatus.INGAME
+    return GameStatus.PREGAME
 
 
 def get_game_or_404(game_id: int, db: Session) -> Game:

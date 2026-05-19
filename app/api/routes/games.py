@@ -11,9 +11,9 @@ from app.api.helpers import (
     get_host_session,
     get_leaderboard,
     get_redis,
+    get_game_status,
     get_session,
     get_vector_db,
-    sync_game_status,
 )
 from app.repository.database import get_db
 from app.repository.enums import GameStatus
@@ -56,16 +56,16 @@ def create_game(
 
     # 초기 상태: startTime이 현재보다 이전이면 바로 ACTIVE
     now = datetime.now(timezone.utc).replace(tzinfo=None)
-    if body.startTime and body.startTime.replace(tzinfo=None) <= now:
-        initial_status = GameStatus.INGAME
-    else:
-        initial_status = GameStatus.PREGAME
+    initial_status = get_game_status(
+        body.startTime.replace(tzinfo=None) if body.startTime else None,
+        body.endTime.replace(tzinfo=None) if body.endTime else None,
+        now,
+    )
 
     game = Game(
         hostname=body.hostname.strip(),
         host_session_id=session_id,
         target_word=body.targetWord.strip(),
-        status=initial_status,
         started_at=body.startTime,
         ended_at=body.endTime,
     )
@@ -93,9 +93,9 @@ def join_game(
     db: Session = Depends(get_db),
 ):
     game = get_game_or_404(game_id, db)
-    sync_game_status(game, db)
+    game_status = get_game_status(game.started_at, game.ended_at)
 
-    if game.status == GameStatus.POSTGAME:
+    if game_status == GameStatus.POSTGAME:
         raise HTTPException(status_code=400, detail="이미 종료된 게임입니다.")
 
     nickname = body.nickname.strip()
@@ -137,7 +137,7 @@ def join_game(
 @router.get("/{game_id}/status", response_model=GameStatusResponse)
 def game_status(game_id: int, db: Session = Depends(get_db)):
     game = get_game_or_404(game_id, db)
-    status = sync_game_status(game, db)
+    status = get_game_status(game.started_at, game.ended_at)
     count = db.query(Participant).filter(Participant.game_id == game_id).count()
     return GameStatusResponse(
         gameId=game_id,
@@ -180,8 +180,9 @@ def update_word(
 ):
     get_host_session(request, game_id)
     game = get_game_or_404(game_id, db)
+    game_status = get_game_status(game.started_at, game.ended_at)
 
-    if game.status != GameStatus.PREGAME:
+    if game_status != GameStatus.PREGAME:
         raise HTTPException(status_code=400, detail="게임 시작 전에만 단어를 수정할 수 있습니다.")
 
     if not body.targetWord.strip():
@@ -205,9 +206,9 @@ def guess_word(
     session = get_session(request)
 
     game = get_game_or_404(game_id, db)
-    sync_game_status(game, db)
+    game_status = get_game_status(game.started_at, game.ended_at)
 
-    if game.status != GameStatus.INGAME:
+    if game_status != GameStatus.INGAME:
         raise HTTPException(status_code=400, detail="게임이 진행 중이 아닙니다.")
 
     word = body.word.strip()
@@ -285,7 +286,7 @@ def guess_word(
 @router.get("/{game_id}/polling", response_model=GamePollingResponse)
 def game_polling(game_id: int, db: Session = Depends(get_db)):
     game = get_game_or_404(game_id, db)
-    status = sync_game_status(game, db)
+    status = get_game_status(game.started_at, game.ended_at)
     count = db.query(Participant).filter(Participant.game_id == game_id).count()
 
     r = get_redis()
@@ -359,9 +360,9 @@ def end_game(
         )
 
     game = get_game_or_404(game_id, db)
-    game.status = GameStatus.POSTGAME
-    if not game.ended_at:
-        game.ended_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    if not game.ended_at or game.ended_at > now:
+        game.ended_at = now
     db.commit()
 
     return MessageResponse(message="게임이 종료되었습니다.")

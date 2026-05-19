@@ -9,9 +9,9 @@ from starlette.requests import Request
 from app.api.helpers import (
     get_game_or_404,
     get_redis,
+    get_game_status,
     get_session,
     get_vector_db,
-    sync_game_status,
 )
 from app.repository.database import get_db
 from app.repository.enums import GameStatus
@@ -82,10 +82,11 @@ def create_game(
     session_id = str(uuid.uuid4())
 
     now = datetime.now(timezone.utc).replace(tzinfo=None)
-    if body.startTime and body.startTime.replace(tzinfo=None) <= now:
-        initial_status = GameStatus.INGAME
-    else:
-        initial_status = GameStatus.PREGAME
+    initial_status = get_game_status(
+        body.startTime.replace(tzinfo=None) if body.startTime else None,
+        body.endTime.replace(tzinfo=None) if body.endTime else None,
+        now,
+    )
 
     # 기존 게임이 있으면 덮어쓰기, 없으면 생성
     game = db.query(Game).filter(Game.id == V1_GAME_ID).first()
@@ -94,7 +95,6 @@ def create_game(
         game.hostname = body.hostname.strip()
         game.host_session_id = session_id
         game.target_word = body.targetWord.strip()
-        game.status = initial_status
         game.started_at = body.startTime
         game.ended_at = body.endTime
         game.created_at = datetime.now(timezone.utc).replace(tzinfo=None) # TODO: TIMEZONE을 한국시간으로 변경
@@ -110,7 +110,6 @@ def create_game(
             hostname=body.hostname.strip(),
             host_session_id=session_id,
             target_word=body.targetWord.strip(),
-            status=initial_status,
             started_at=body.startTime,
             ended_at=body.endTime,
         )
@@ -139,9 +138,9 @@ def join_game(
     db: Session = Depends(get_db),
 ):
     game = get_game_or_404(V1_GAME_ID, db)
-    sync_game_status(game, db)
+    game_status = get_game_status(game.started_at, game.ended_at)
 
-    if game.status == GameStatus.POSTGAME:
+    if game_status == GameStatus.POSTGAME:
         logger.warning("게임 참가 실패 - 이미 종료된 게임 (nickname=%s)", body.nickname.strip())
         raise HTTPException(status_code=409, detail="이미 종료된 게임입니다.")
 
@@ -218,9 +217,10 @@ def update_word(
 ):
     get_host_session_v1(request)
     game = get_game_or_404(V1_GAME_ID, db)
+    game_status = get_game_status(game.started_at, game.ended_at)
 
-    if game.status != GameStatus.PREGAME:
-        logger.warning("단어 수정 실패 - 게임이 이미 시작됨 (status=%s)", game.status)
+    if game_status != GameStatus.PREGAME:
+        logger.warning("단어 수정 실패 - 게임이 이미 시작됨 (status=%s)", game_status)
         raise HTTPException(status_code=409, detail="게임 시작 전에만 단어를 수정할 수 있습니다.")
 
     if not body.targetWord.strip():
@@ -248,9 +248,9 @@ def guess_word(
     db: Session = Depends(get_db),
 ):
     game = get_game_or_404(V1_GAME_ID, db)
-    sync_game_status(game, db)
+    game_status = get_game_status(game.started_at, game.ended_at)
 
-    if game.status != GameStatus.INGAME:
+    if game_status != GameStatus.INGAME:
         raise HTTPException(status_code=409, detail="게임이 진행 중이 아닙니다.")
 
     word = body.word.strip()
@@ -371,7 +371,6 @@ def _get_users_from_redis(game_id: int, db: Session) -> list[UserInfo]:
 @router.get("/polling/db", response_model=GameInfoResponse)
 def game_polling(db: Session = Depends(get_db)):
     game = get_game_or_404(V1_GAME_ID, db)
-    sync_game_status(game, db)
 
     participants = (
         db.query(Participant)
@@ -423,7 +422,6 @@ def game_polling(db: Session = Depends(get_db)):
 @router.get("/polling", response_model=GameInfoResponse)
 def game_polling(db: Session = Depends(get_db)):
     game = get_game_or_404(V1_GAME_ID, db) # 게임 상태도 Redis에서 관리하자
-    sync_game_status(game, db)
 
     users = _get_users_from_redis(V1_GAME_ID, db)
 
@@ -483,9 +481,9 @@ def end_game(
         return JSONResponse(status_code=403, content={"message": "호스트만 종료할 수 있습니다."})
 
     game = get_game_or_404(V1_GAME_ID, db)
-    game.status = GameStatus.POSTGAME
-    if not game.ended_at:
-        game.ended_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    if not game.ended_at or game.ended_at > now:
+        game.ended_at = now
     db.commit()
 
     logger.info("게임 강제 종료 - gameId=%d", V1_GAME_ID)

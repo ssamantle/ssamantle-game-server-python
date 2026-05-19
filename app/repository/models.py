@@ -4,7 +4,6 @@ from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, St
 from sqlalchemy.orm import relationship
 
 from app.repository.database import Base
-from app.repository.enums import GameStatus
 
 
 class Game(Base):
@@ -14,7 +13,6 @@ class Game(Base):
     hostname = Column(String, nullable=False)
     host_session_id = Column(String, nullable=False)
     target_word = Column(String, nullable=False)
-    status = Column(String, default=GameStatus.PREGAME)
     started_at = Column(DateTime, nullable=True)
     ended_at = Column(DateTime, nullable=True)
     created_at = Column(

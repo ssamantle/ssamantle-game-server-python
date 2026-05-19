@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 
-from app.repository.enums import GameStatus
 from app.repository.models import Game, Participant
 
 
@@ -89,12 +91,13 @@ class ParticipantRepository:
         return len(participants)
 
     def exists_active_nickname(self, nickname: str) -> bool:
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         return (
             self.db.query(Participant)
             .join(Game)
             .filter(
                 Participant.nickname == nickname,
-                Game.status.in_([GameStatus.PREGAME, GameStatus.INGAME]),
+                or_(Game.ended_at.is_(None), Game.ended_at > now),
             )
             .first()
             is not None
