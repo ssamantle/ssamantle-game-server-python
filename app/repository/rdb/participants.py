@@ -5,7 +5,10 @@ from datetime import datetime, timezone
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 
+from app.core.logger import getLogger
 from app.repository.models import Game, Participant
+
+logger = getLogger(__name__)
 
 
 class ParticipantRepository:
@@ -69,20 +72,30 @@ class ParticipantRepository:
     def list_by_game_with_guesses_ordered_by_best_similarity(
         self, game_id: int
     ) -> list[Participant]:
-        return (
+        participants = (
             self.db.query(Participant)
             .options(selectinload(Participant.guesses))
             .filter(Participant.game_id == game_id)
             .order_by(Participant.best_similarity.desc())
             .all()
         )
+        logger.debug(
+            "RDB participants loaded with guesses - gameId=%d participants=%d ordering=best_similarity_desc",
+            game_id,
+            len(participants),
+        )
+        return participants
 
     def list_by_game_and_ids_with_guesses(
         self, game_id: int, participant_ids: list[int]
     ) -> list[Participant]:
         if not participant_ids:
+            logger.debug(
+                "RDB participant hydration skipped - gameId=%d requestedIds=0",
+                game_id,
+            )
             return []
-        return (
+        participants = (
             self.db.query(Participant)
             .options(selectinload(Participant.guesses))
             .filter(
@@ -91,6 +104,13 @@ class ParticipantRepository:
             )
             .all()
         )
+        logger.debug(
+            "RDB participant hydration completed - gameId=%d requestedIds=%d loadedParticipants=%d",
+            game_id,
+            len(participant_ids),
+            len(participants),
+        )
+        return participants
 
     def list_by_game_ordered_by_best_similarity(
         self, game_id: int
