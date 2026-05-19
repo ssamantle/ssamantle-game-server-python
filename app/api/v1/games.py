@@ -6,9 +6,16 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session, selectinload
 from starlette.requests import Request
 
-from app.db.database import get_db
-from app.db.enums import GameStatus
-from app.db.models import Game, GuessHistory, Participant
+from app.api.helpers import (
+    get_game_or_404,
+    get_redis,
+    get_session,
+    get_vector_db,
+    sync_game_status,
+)
+from app.repository.database import get_db
+from app.repository.enums import GameStatus
+from app.repository.models import Game, GuessHistory, Participant
 from app.schemas.game import (
     CreateGameRequest,
     CreateGameResponse,
@@ -28,16 +35,7 @@ from app.schemas.game import (
     UpdateWordRequest,
     UserInfo,
 )
-from app.utils import (
-    build_submission_detail,
-    get_best_guess,
-    get_latest_guess,
-    get_vector_db,
-    get_redis,
-    get_session,
-    sync_game_status,
-    get_game_or_404,
-)
+from app.utils import get_best_guess, get_latest_guess
 from app.core.logger import getLogger
 
 logger = getLogger(__name__)

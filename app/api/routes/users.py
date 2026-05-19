@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from app.db.database import get_db
-from app.db.enums import GameStatus
-from app.db.models import Game, Participant
+from app.repository.database import get_db
+from app.repository.enums import GameStatus
+from app.repository.models import Game, Participant
 from app.schemas.user import NicknameCheckResponse
 
 router = APIRouter(prefix="/api/users", tags=["users"])

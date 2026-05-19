@@ -6,9 +6,18 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 
-from app.db.database import get_db
-from app.db.enums import GameStatus
-from app.db.models import Game, GuessHistory, Participant
+from app.api.helpers import (
+    get_game_or_404,
+    get_host_session,
+    get_leaderboard,
+    get_redis,
+    get_session,
+    get_vector_db,
+    sync_game_status,
+)
+from app.repository.database import get_db
+from app.repository.enums import GameStatus
+from app.repository.models import Game, GuessHistory, Participant
 from app.schemas.game import (
     CreateGameRequest,
     CreateGameResponse,
@@ -24,15 +33,6 @@ from app.schemas.game import (
     ParticipantResult,
     UpdateEndtimeRequest,
     UpdateWordRequest,
-)
-from app.utils import (
-    get_game_or_404,
-    get_leaderboard,
-    get_redis,
-    get_session,
-    get_host_session,
-    get_vector_db,
-    sync_game_status,
 )
 
 router = APIRouter(prefix="/api/games", tags=["games"])
