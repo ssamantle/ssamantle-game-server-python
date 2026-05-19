@@ -58,4 +58,8 @@ EXPOSE 8000
 
 # Gunicorn + UvicornWorker 권장이지만 지금은 uvicorn을 사용하도록 함.
 # worker 수는 보통 (2 x CPU 코어 수) + 1 로 설정합니다.
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+ENTRYPOINT ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["--workers", "4"]
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=20s \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"

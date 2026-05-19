@@ -6,9 +6,6 @@ import os
 
 BASE_DIR = Path(__file__).parent.parent.resolve()
 
-REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
-REDIS_PORT = os.environ.get('REDIS_PORT', 6380)
-
 
 class Settings(BaseSettings):
     """애플리케이션 설정"""
@@ -16,14 +13,14 @@ class Settings(BaseSettings):
     # 기본 설정
     app_name: str = "Semantle Server"
     app_version: str = "1.0.0"
+    app_description: str = "FastAPI 기반 백엔드 서비스"
 
     # 서버 설정
     host: str = "0.0.0.0"
     port: int = 8000
 
     # 환경
-    environment: str = "development"
-    debug: bool = True
+    debug: bool = os.environ['DEBUG'].lower() in ['true', '1']
 
     # FastText 벡터 설정 (절대 경로)
     vector_db_path: str = str(BASE_DIR / "data" / "vectors.db")
@@ -31,13 +28,11 @@ class Settings(BaseSettings):
     secrets_path: str = str(BASE_DIR / "data" / "daily_secrets_2026.json")
 
     # 데이터베이스
-    database_url: str = "sqlite:///./data/semantle.db"
-
-    # Redis
-    redis_url: str = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
+    database_url: str = os.environ['DATABASE_URL']
+    redis_url: str = os.environ['REDIS_URL']
 
     # 세션
-    secret_key: str = "dev-secret-key-change-in-production"
+    secret_key: str = os.environ['SECRET']
 
     # 로깅
     log_dir: str = str(BASE_DIR / "data" / "logs")
