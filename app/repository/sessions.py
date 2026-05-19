@@ -1,10 +1,11 @@
-from collections.abc import AsyncGenerator
+from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
     async_sessionmaker,
     AsyncSession,
 )
+import redis
 
 from app.core.config import get_settings
 
@@ -55,3 +56,14 @@ def init_pg_db():
     from app.repository.models import GameBase  # noqa: F401
 
     GameBase.metadata.create_all(bind=pg_engine)
+
+
+# ================================================================
+
+
+async def get_redis() -> AsyncGenerator[redis.asyncio.Redis, None]:
+    r = redis.asyncio.from_url(settings.redis_url, decode_responses=True)
+    try:
+        yield r
+    finally:
+        await r.close()
