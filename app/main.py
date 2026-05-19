@@ -5,8 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.core.config import get_settings
-from app.api.routes import health, similarity
-from app.api.routes import users  # , games
+from app.api.routes import health, users
 from app.api.v1 import games as games_v1
 from app.api.v1 import auth as auth_v1
 from app.core.logger import (
@@ -66,10 +65,7 @@ app.add_middleware(
 
 # 라우터 등록
 app.include_router(health.router)
-
-app.include_router(similarity.router)
 app.include_router(users.router)
-# app.include_router(games.router)
 app.include_router(games_v1.router)
 app.include_router(auth_v1.router)
 
