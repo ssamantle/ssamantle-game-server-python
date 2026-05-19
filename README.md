@@ -129,11 +129,7 @@ python scripts/process_vecs.py \
 **3. 서버 실행**
 
 ```bash
-# 개발 모드 (자동 리로드)
-python main.py
-
-# 또는 uvicorn 직접
-uvicorn main:app --reload
+uv run uvicorn app.main:app
 ```
 
 ---
