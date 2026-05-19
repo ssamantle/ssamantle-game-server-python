@@ -1,7 +1,7 @@
 version: "3.0"
 services:
-  server:
-    container_name: ssamantle-server-dev
+  game_server:
+    container_name: dev-game-server
     image: ssamantle-server:dev
     build:
       context: .
@@ -24,13 +24,13 @@ services:
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
 
   redis:
-    container_name: ssamantle-server-dev-redis
+    container_name: dev-redis
     image: redis:latest
     ports: ["${REDIS_PORT}:6379"]
     command: ["redis-server", "--appendonly", "yes"]
 
   postgres:
-    container_name: ssamantle-server-dev-postgres
+    container_name: dev-postgres
     image: postgres:latest
     volumes: ["dev_postgres_data:/var/lib/postgres/data"]
     ports: ["${DB_PORT}:5432"]
