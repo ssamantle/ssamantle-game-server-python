@@ -66,6 +66,32 @@ class ParticipantRepository:
             .all()
         )
 
+    def list_by_game_with_guesses_ordered_by_best_similarity(
+        self, game_id: int
+    ) -> list[Participant]:
+        return (
+            self.db.query(Participant)
+            .options(selectinload(Participant.guesses))
+            .filter(Participant.game_id == game_id)
+            .order_by(Participant.best_similarity.desc())
+            .all()
+        )
+
+    def list_by_game_and_ids_with_guesses(
+        self, game_id: int, participant_ids: list[int]
+    ) -> list[Participant]:
+        if not participant_ids:
+            return []
+        return (
+            self.db.query(Participant)
+            .options(selectinload(Participant.guesses))
+            .filter(
+                Participant.game_id == game_id,
+                Participant.id.in_(participant_ids),
+            )
+            .all()
+        )
+
     def list_by_game_ordered_by_best_similarity(
         self, game_id: int
     ) -> list[Participant]:
