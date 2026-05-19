@@ -1,34 +1,13 @@
 from datetime import datetime, timezone
-from enum import StrEnum
 
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    Float,
-    Boolean,
-    BLOB,
-    DateTime,
-    ForeignKey,
-)
-from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
+
+from app.repository.database import Base
+from app.repository.enums import GameStatus
 
 
-class GameBase(DeclarativeBase):
-    pass
-
-
-class VectorBase(DeclarativeBase):
-    pass
-
-
-class GameStatus(StrEnum):
-    PREGAME = "PREGAME"
-    INGAME = "INGAME"
-    POSTGAME = "POSTGAME"
-
-
-class Game(GameBase):
+class Game(Base):
     __tablename__ = "games"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -45,7 +24,7 @@ class Game(GameBase):
     participants = relationship("Participant", back_populates="game")
 
 
-class Participant(GameBase):
+class Participant(Base):
     __tablename__ = "participants"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -65,7 +44,7 @@ class Participant(GameBase):
     )
 
 
-class GuessHistory(GameBase):
+class GuessHistory(Base):
     __tablename__ = "guess_history"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -80,13 +59,3 @@ class GuessHistory(GameBase):
     )
 
     participant = relationship("Participant", back_populates="guesses")
-
-
-class Vector(VectorBase):
-    __tablename__ = "vectors"
-
-    word = Column(String, primary_key=True, index=True)
-    vec = Column(BLOB, nullable=False)
-    norm = Column(Float, nullable=False)
-    sim = Column(Float)
-    rank = Column(Integer)
