@@ -3,7 +3,10 @@ from __future__ import annotations
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
+from app.core.logger import getLogger
 from app.repository.models import Game, Participant
+
+logger = getLogger(__name__)
 
 
 class GameRepository:
@@ -13,7 +16,9 @@ class GameRepository:
         self.db = db
 
     def find_by_id(self, game_id: int) -> Game | None:
-        return self.db.query(Game).filter(Game.id == game_id).first()
+        game = self.db.query(Game).filter(Game.id == game_id).first()
+        logger.debug("RDB game lookup - gameId=%d found=%s", game_id, game is not None)
+        return game
 
     def find_latest(self) -> Game | None:
         return self.db.query(Game).order_by(desc(Game.created_at)).first()
