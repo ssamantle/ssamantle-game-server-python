@@ -1,9 +1,9 @@
 [project]
-name = "ssamantle-server"
-version = "0.1.0"
-description = "Add your description here"
+name = "Ssamantle(싸멘틀) Game Server"
+version = "1.0.0"
+description = "FastAPI 기반 백엔드 서비스"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.136.1",
     "psycopg2-binary>=2.9.12",
