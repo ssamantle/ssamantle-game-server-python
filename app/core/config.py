@@ -1,8 +1,13 @@
-from pydantic_settings import BaseSettings
 from functools import lru_cache
 from pathlib import Path
 import os
 import tomllib
+
+from pydantic_settings import BaseSettings
+import dotenv
+
+dotenv.load_dotenv()
+
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
