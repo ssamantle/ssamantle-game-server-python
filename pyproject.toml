@@ -21,3 +21,6 @@ dependencies = [
 perf = [
     "locust>=2.44.0,<3",
 ]
+test = [
+    "pytest>=9.0.3,<10",
+]

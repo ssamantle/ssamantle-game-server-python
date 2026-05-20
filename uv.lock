@@ -1140,6 +1140,9 @@ dependencies = [
 perf = [
     { name = "locust" },
 ]
+test = [
+    { name = "pytest" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1157,6 +1160,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 perf = [{ name = "locust", specifier = ">=2.44.0,<3" }]
+test = [{ name = "pytest", specifier = ">=9.0.3,<10" }]
 
 [[package]]
 name = "starlette"
