@@ -57,6 +57,8 @@ data/
 *.vec.gz
 vectors.db
 *.db
+!loadtests/data/
+!loadtests/data/words_smoke.txt
 
 # 가상환경
 .venv
