@@ -58,7 +58,7 @@ EXPOSE 8000
 
 # Gunicorn + UvicornWorker 권장이지만 지금은 uvicorn을 사용하도록 함.
 # worker 수는 보통 (2 x CPU 코어 수) + 1 로 설정합니다.
-ENTRYPOINT ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 CMD ["--workers", "4"]
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=20s \
