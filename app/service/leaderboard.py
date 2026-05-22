@@ -4,10 +4,9 @@ from datetime import datetime, timezone
 
 from app.core.logger import getLogger
 from app.repository.rdb import GameRepository, ParticipantRepository
-from app.repository.redis import LeaderboardRepository, ParticipantCacheRepository
+from app.repository.redis import GameCacheRepository, LeaderboardRepository, ParticipantCacheRepository
 from app.schemas.game import GameInfoResponse, SubmissionSummary, UserInfo
 from app.service.exceptions import GameNotFoundException
-from app.service.game_state import get_current_game
 from app.service.games import V1_GAME_ID
 from app.utils import get_best_guess, get_latest_guess
 
@@ -27,18 +26,20 @@ class LeaderboardService:
         participants: ParticipantRepository,
         participant_cache: ParticipantCacheRepository,
         leaderboard: LeaderboardRepository,
+        game_cache: GameCacheRepository,
     ):
         self.games = games
         self.participants = participants
         self.participant_cache = participant_cache
         self.leaderboard = leaderboard
+        self.game_cache = game_cache
 
     def get_v1_game_info_from_cache(self) -> GameInfoResponse:
         logger.debug(
             "Polling request received - source=cache gameId=%d",
             V1_GAME_ID,
         )
-        game = get_current_game()
+        game = self.game_cache.get()
         if game is None:
             logger.warning(
                 "Polling cache aborted - game not found in RDB gameId=%d",

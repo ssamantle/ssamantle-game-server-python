@@ -9,7 +9,7 @@ from app.core.logger import getLogger
 from app.repository.enums import GameStatus
 from app.repository.models import Game
 from app.repository.rdb import GameRepository, ParticipantRepository
-from app.repository.redis import LeaderboardRepository, ParticipantCacheRepository
+from app.repository.redis import GameCacheRepository, LeaderboardRepository, ParticipantCacheRepository
 from app.repository.vector import VectorStore
 from app.schemas.game import CreateGameRequest, GameResultResponse, ParticipantResult
 from app.schemas.game import UpdateEndtimeRequest, UpdateWordRequest
@@ -20,8 +20,6 @@ from app.service.exceptions import (
     GameNotFoundException,
     WordNotFoundException,
 )
-from app.service.game_state import set_current_game
-
 logger = getLogger(__name__)
 
 V1_GAME_ID = 1
@@ -48,6 +46,7 @@ class GameService:
         participants: ParticipantRepository,
         leaderboard: LeaderboardRepository,
         participant_cache: ParticipantCacheRepository,
+        game_cache: GameCacheRepository,
         vector_store: VectorStore,
     ):
         self.db = db
@@ -55,6 +54,7 @@ class GameService:
         self.participants = participants
         self.leaderboard = leaderboard
         self.participant_cache = participant_cache
+        self.game_cache = game_cache
         self.vector_store = vector_store
 
     def get_game_or_raise(self, game_id: int) -> Game:
@@ -120,7 +120,7 @@ class GameService:
 
         self.db.commit()
         self.db.refresh(game)
-        set_current_game(game)
+        self.game_cache.set(game.started_at, game.ended_at)
         self.vector_store.refresh_for_target(game.target_word)
 
         session = SessionPayload(
@@ -138,7 +138,7 @@ class GameService:
         if body.endedAt is not None:
             game.ended_at = body.endedAt
         self.db.commit()
-        set_current_game(game)
+        self.game_cache.set(game.started_at, game.ended_at)
         logger.info(
             "게임 시간 수정 - startedAt=%s, endedAt=%s",
             game.started_at,
@@ -162,7 +162,7 @@ class GameService:
         logger.info("정답 단어 수정 - '%s' -> '%s'", game.target_word, target_word)
         game.target_word = target_word
         self.db.commit()
-        set_current_game(game)
+        self.game_cache.set(game.started_at, game.ended_at)
         self.vector_store.refresh_for_target(game.target_word)
 
     def end_v1_game(self) -> None:
@@ -171,7 +171,7 @@ class GameService:
         if not game.ended_at or game.ended_at > now:
             game.ended_at = now
         self.db.commit()
-        set_current_game(game)
+        self.game_cache.set(game.started_at, game.ended_at)
         logger.info("게임 강제 종료 - gameId=%d", V1_GAME_ID)
 
     def get_v1_result(self) -> GameResultResponse:

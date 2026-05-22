@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.repository.database import get_db
 from app.repository.deps import (
+    get_game_cache_repository,
     get_game_repository,
     get_guess_history_repository,
     get_leaderboard_repository,
@@ -12,7 +13,7 @@ from app.repository.deps import (
 )
 from app.repository.rdb import GameRepository, GuessHistoryRepository
 from app.repository.rdb import ParticipantRepository
-from app.repository.redis import LeaderboardRepository, ParticipantCacheRepository
+from app.repository.redis import GameCacheRepository, LeaderboardRepository, ParticipantCacheRepository
 from app.repository.vector import VectorStore
 from app.service.auth import AuthService
 from app.service.games import GameService
@@ -33,9 +34,8 @@ def get_game_service(
     games: GameRepository = Depends(get_game_repository),
     participants: ParticipantRepository = Depends(get_participant_repository),
     leaderboard: LeaderboardRepository = Depends(get_leaderboard_repository),
-    participant_cache: ParticipantCacheRepository = Depends(
-        get_participant_cache_repository
-    ),
+    participant_cache: ParticipantCacheRepository = Depends(get_participant_cache_repository),
+    game_cache: GameCacheRepository = Depends(get_game_cache_repository),
     vector_store: VectorStore = Depends(get_vector_store),
 ) -> GameService:
     return GameService(
@@ -44,6 +44,7 @@ def get_game_service(
         participants=participants,
         leaderboard=leaderboard,
         participant_cache=participant_cache,
+        game_cache=game_cache,
         vector_store=vector_store,
     )
 
@@ -91,10 +92,12 @@ def get_leaderboard_service(
     participants: ParticipantRepository = Depends(get_participant_repository),
     participant_cache: ParticipantCacheRepository = Depends(get_participant_cache_repository),
     leaderboard: LeaderboardRepository = Depends(get_leaderboard_repository),
+    game_cache: GameCacheRepository = Depends(get_game_cache_repository),
 ) -> LeaderboardService:
     return LeaderboardService(
         games=games,
         participants=participants,
         participant_cache=participant_cache,
         leaderboard=leaderboard,
+        game_cache=game_cache,
     )

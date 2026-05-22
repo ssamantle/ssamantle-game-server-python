@@ -8,6 +8,7 @@ from app.repository.rdb import (
     ParticipantRepository,
 )
 from app.repository.redis import (
+    GameCacheRepository,
     LeaderboardRepository,
     ParticipantCacheRepository,
 )
@@ -29,6 +30,10 @@ def get_guess_history_repository(
     db: Session = Depends(get_db),
 ) -> GuessHistoryRepository:
     return GuessHistoryRepository(db)
+
+
+def get_game_cache_repository() -> GameCacheRepository:
+    return GameCacheRepository(get_redis_client())
 
 
 def get_leaderboard_repository() -> LeaderboardRepository:
