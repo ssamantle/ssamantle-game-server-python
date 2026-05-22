@@ -66,6 +66,10 @@ class ParticipantService:
             participant.id,
             nickname,
             session_id,
+            best_similarity=0.0,
+            best_word_rank=0,
+            latest_similarity=0.0,
+            latest_word_rank=0,
         )
 
         logger.info("게임 참가 - nickname=%s, participantId=%s", nickname, participant.id)

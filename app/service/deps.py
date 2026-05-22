@@ -70,6 +70,7 @@ def get_guess_service(
     db: Session = Depends(get_db),
     games: GameRepository = Depends(get_game_repository),
     participants: ParticipantRepository = Depends(get_participant_repository),
+    participant_cache: ParticipantCacheRepository = Depends(get_participant_cache_repository),
     guesses: GuessHistoryRepository = Depends(get_guess_history_repository),
     leaderboard: LeaderboardRepository = Depends(get_leaderboard_repository),
     vector_store: VectorStore = Depends(get_vector_store),
@@ -78,6 +79,7 @@ def get_guess_service(
         db=db,
         games=games,
         participants=participants,
+        participant_cache=participant_cache,
         guesses=guesses,
         leaderboard=leaderboard,
         vector_store=vector_store,
@@ -87,10 +89,12 @@ def get_guess_service(
 def get_leaderboard_service(
     games: GameRepository = Depends(get_game_repository),
     participants: ParticipantRepository = Depends(get_participant_repository),
+    participant_cache: ParticipantCacheRepository = Depends(get_participant_cache_repository),
     leaderboard: LeaderboardRepository = Depends(get_leaderboard_repository),
 ) -> LeaderboardService:
     return LeaderboardService(
         games=games,
         participants=participants,
+        participant_cache=participant_cache,
         leaderboard=leaderboard,
     )

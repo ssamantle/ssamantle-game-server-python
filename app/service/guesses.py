@@ -7,6 +7,7 @@ from app.repository.enums import GameStatus
 from app.repository.models import GuessHistory
 from app.repository.rdb import GameRepository, GuessHistoryRepository
 from app.repository.rdb import ParticipantRepository
+from app.repository.redis import ParticipantCacheRepository
 from app.repository.redis import LeaderboardRepository
 from app.repository.vector import VectorStore
 from app.schemas.game import GuessHistoryItem, GuessRequest, GuessResponse
@@ -25,6 +26,7 @@ class GuessService:
         db: Session,
         games: GameRepository,
         participants: ParticipantRepository,
+        participant_cache: ParticipantCacheRepository,
         guesses: GuessHistoryRepository,
         leaderboard: LeaderboardRepository,
         vector_store: VectorStore,
@@ -32,6 +34,7 @@ class GuessService:
         self.db = db
         self.games = games
         self.participants = participants
+        self.participant_cache = participant_cache
         self.guesses = guesses
         self.leaderboard = leaderboard
         self.vector_store = vector_store
@@ -67,9 +70,15 @@ class GuessService:
         similarity = round(max(0.0, raw_similarity), 4)
         is_answer = word == game.target_word
 
-        if similarity > participant.best_similarity:
+        is_new_best = similarity > participant.best_similarity
+        if is_new_best:
             participant.best_similarity = similarity
             participant.closest_word = word
+            best_word_rank = word_rank
+        else:
+            cached = self.participant_cache.get(V1_GAME_ID, participant.id)
+            best_word_rank = cached.get("bestWordRank", 0) if cached else 0
+
         if is_answer:
             participant.is_correct = True
             logger.info("정답 맞힘 - username=%s, word=%s", username, word)
@@ -83,6 +92,17 @@ class GuessService:
                 is_answer=is_answer,
             )
         )
+        self.participant_cache.put(
+            V1_GAME_ID,
+            participant.id,
+            participant.nickname,
+            session_id,
+            best_similarity=participant.best_similarity,
+            best_word_rank=best_word_rank,
+            latest_similarity=similarity,
+            latest_word_rank=word_rank,
+        )
+
         self.db.commit()
 
         self.leaderboard.update_score(
