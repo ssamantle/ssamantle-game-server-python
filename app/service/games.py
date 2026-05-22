@@ -20,6 +20,7 @@ from app.service.exceptions import (
     GameNotFoundException,
     WordNotFoundException,
 )
+from app.service.game_state import set_current_game
 
 logger = getLogger(__name__)
 
@@ -119,6 +120,7 @@ class GameService:
 
         self.db.commit()
         self.db.refresh(game)
+        set_current_game(game)
         self.vector_store.refresh_for_target(game.target_word)
 
         session = SessionPayload(
@@ -136,6 +138,7 @@ class GameService:
         if body.endedAt is not None:
             game.ended_at = body.endedAt
         self.db.commit()
+        set_current_game(game)
         logger.info(
             "게임 시간 수정 - startedAt=%s, endedAt=%s",
             game.started_at,
@@ -159,6 +162,7 @@ class GameService:
         logger.info("정답 단어 수정 - '%s' -> '%s'", game.target_word, target_word)
         game.target_word = target_word
         self.db.commit()
+        set_current_game(game)
         self.vector_store.refresh_for_target(game.target_word)
 
     def end_v1_game(self) -> None:
@@ -167,6 +171,7 @@ class GameService:
         if not game.ended_at or game.ended_at > now:
             game.ended_at = now
         self.db.commit()
+        set_current_game(game)
         logger.info("게임 강제 종료 - gameId=%d", V1_GAME_ID)
 
     def get_v1_result(self) -> GameResultResponse:

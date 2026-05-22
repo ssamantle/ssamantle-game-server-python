@@ -7,6 +7,7 @@ from app.repository.rdb import GameRepository, ParticipantRepository
 from app.repository.redis import LeaderboardRepository
 from app.schemas.game import GameInfoResponse, SubmissionSummary, UserInfo
 from app.service.exceptions import GameNotFoundException
+from app.service.game_state import get_current_game
 from app.service.games import V1_GAME_ID
 from app.utils import get_best_guess, get_latest_guess
 
@@ -35,7 +36,7 @@ class LeaderboardService:
             "Polling request received - source=cache gameId=%d",
             V1_GAME_ID,
         )
-        game = self.games.find_by_id(V1_GAME_ID)
+        game = get_current_game()
         if game is None:
             logger.warning(
                 "Polling cache aborted - game not found in RDB gameId=%d",
