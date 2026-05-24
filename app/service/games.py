@@ -115,11 +115,11 @@ class GameService:
             game.ended_at = body.endTime
             game.created_at = datetime.now(timezone.utc).replace(tzinfo=None)
             self.participants.delete_by_game_id(V1_GAME_ID)
-            self.leaderboard.clear(V1_GAME_ID)
-            self.participant_cache.clear(V1_GAME_ID)
 
         self.db.commit()
         self.db.refresh(game)
+        self.leaderboard.clear(V1_GAME_ID)
+        self.participant_cache.clear(V1_GAME_ID)
         self.game_cache.set(game.started_at, game.ended_at)
         self.vector_store.refresh_for_target(game.target_word)
 

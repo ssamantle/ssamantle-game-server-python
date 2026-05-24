@@ -92,6 +92,14 @@ class GuessService:
                 is_answer=is_answer,
             )
         )
+        
+        # RDB 커밋 후 Redis 캐시 업데이트
+        # RDB가 더 신뢰할 수 있는 데이터소스이므로, 커밋 이후에 캐시를 업데이트하여 일관성을 유지
+        # 커밋 전에 캐시를 업데이트하면, RDB 커밋 실패 시 캐시와 RDB 간 데이터 불일치가 발생할 수 있음
+        # 오염된 데이터보다 오래된 데이터가 캐시에 남아있는 것이 더 낫다고 판단하여 커밋 이후에 캐시 업데이트
+        self.db.commit()
+        
+        # 참가자 정보 캐시 업데이트
         self.participant_cache.put(
             V1_GAME_ID,
             participant.id,
@@ -103,8 +111,7 @@ class GuessService:
             latest_word_rank=word_rank,
         )
 
-        self.db.commit()
-
+        # 리더보드 업데이트
         self.leaderboard.update_score(
             V1_GAME_ID,
             participant.id,
