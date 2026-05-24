@@ -63,3 +63,5 @@ vectors.db
 # 가상환경
 .venv
 .venv/
+
+.claude

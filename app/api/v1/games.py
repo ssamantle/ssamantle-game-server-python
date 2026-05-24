@@ -27,7 +27,7 @@ from app.service.games import GameService, V1_GAME_ID
 from app.service.guesses import GuessService
 from app.service.leaderboard import LeaderboardService
 from app.service.participants import ParticipantService
-
+from http import HTTPStatus
 router = APIRouter(prefix="/api/v1/games", tags=["games-v1"])
 
 
@@ -35,7 +35,7 @@ def raise_http(error: ServiceException) -> None:
     raise HTTPException(status_code=error.status_code, detail=error.detail) from error
 
 
-@router.post("", response_model=CreateGameResponse, status_code=201)
+@router.post("", response_model=CreateGameResponse, status_code=HTTPStatus.CREATED)
 def create_game(
     body: CreateGameRequest,
     request: Request,

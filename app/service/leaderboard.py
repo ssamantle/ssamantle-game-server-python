@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from app.core.logger import getLogger
 from app.repository.rdb import GameRepository, ParticipantRepository
-from app.repository.redis import LeaderboardRepository
+from app.repository.redis import GameCacheRepository, LeaderboardRepository, ParticipantCacheRepository
 from app.schemas.game import GameInfoResponse, SubmissionSummary, UserInfo
 from app.service.exceptions import GameNotFoundException
 from app.service.games import V1_GAME_ID
@@ -24,18 +24,22 @@ class LeaderboardService:
         self,
         games: GameRepository,
         participants: ParticipantRepository,
+        participant_cache: ParticipantCacheRepository,
         leaderboard: LeaderboardRepository,
+        game_cache: GameCacheRepository,
     ):
         self.games = games
         self.participants = participants
+        self.participant_cache = participant_cache
         self.leaderboard = leaderboard
+        self.game_cache = game_cache
 
     def get_v1_game_info_from_cache(self) -> GameInfoResponse:
         logger.debug(
             "Polling request received - source=cache gameId=%d",
             V1_GAME_ID,
         )
-        game = self.games.find_by_id(V1_GAME_ID)
+        game = self.game_cache.get()
         if game is None:
             logger.warning(
                 "Polling cache aborted - game not found in RDB gameId=%d",
@@ -55,46 +59,26 @@ class LeaderboardService:
                 "Polling cache miss - gameId=%d leaderboardEntries=0",
                 V1_GAME_ID,
             )
-        participant_ids = [participant_id for participant_id, _ in entries]
-        participants = self.participants.list_by_game_and_ids_with_guesses(
-            V1_GAME_ID,
-            participant_ids,
-        )
-        logger.debug(
-            "Polling cache RDB hydration - gameId=%d requestedParticipants=%d loadedParticipants=%d",
-            V1_GAME_ID,
-            len(participant_ids),
-            len(participants),
-        )
-        participants_by_id = {
-            participant.id: participant for participant in participants
-        }
-        missing_participant_ids = [
-            participant_id
-            for participant_id in participant_ids
-            if participant_id not in participants_by_id
-        ]
-        if missing_participant_ids:
-            logger.warning(
-                "Polling cache inconsistency - gameId=%d missingParticipantIds=%s",
-                V1_GAME_ID,
-                missing_participant_ids,
-            )
+        participants = self.participant_cache.get_all(V1_GAME_ID)
 
         users = []
         for rank, (participant_id, score) in enumerate(entries, start=1):
-            participant = participants_by_id.get(participant_id)
+            participant = participants.get(participant_id)
             if participant is None:
                 continue
             users.append(
                 UserInfo(
-                    name=participant.nickname,
+                    name=participant["nickname"],
                     bestSimilarity=round(score, 4),
                     rank=rank,
-                    bestSubmission=_build_submission_summary(get_best_guess(participant)),
-                    latestSubmission=_build_submission_summary(
-                        get_latest_guess(participant)
-                    ),
+                    bestSubmission=SubmissionSummary(
+                        similarity=participant["bestSimilarity"],
+                        wordRank=participant["bestWordRank"],
+                    ) if participant["bestSimilarity"] > 0 else None,
+                    latestSubmission=SubmissionSummary(
+                        similarity=participant["latestSimilarity"],
+                        wordRank=participant["latestWordRank"],
+                    ) if participant["latestSimilarity"] > 0 else None,
                 )
             )
 
