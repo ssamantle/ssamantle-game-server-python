@@ -30,8 +30,7 @@ class Participant(Base):
     nickname = Column(String, nullable=False)
     session_id = Column(String, nullable=False)
     best_similarity = Column(Float, default=0.0)
-    best_word_rank = Column(Integer, default=2_147_483_647)
-    # closest_word = Column(String, nullable=True)
+    closest_word = Column(String, nullable=True)
     is_correct = Column(Boolean, default=False)
     joined_at = Column(
         DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
@@ -51,7 +50,7 @@ class GuessHistory(Base):
     word = Column(String, nullable=False)
     similarity = Column(Float, nullable=False)
     # 정답 단어 기준 유사도 순위 (1~1000위, 1001위 = 순위권 밖)
-    word_rank = Column(Integer, default=2_147_483_647)
+    word_rank = Column(Integer, default=1001)
     is_answer = Column(Boolean, default=False)
     submitted_at = Column(
         DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
